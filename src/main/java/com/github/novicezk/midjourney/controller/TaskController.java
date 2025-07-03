@@ -1,8 +1,11 @@
 package com.github.novicezk.midjourney.controller;
 
+import cn.hutool.core.codec.Base64;
 import cn.hutool.core.comparator.CompareUtil;
+import cn.hutool.core.img.ImgUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONObject;
 import com.github.novicezk.midjourney.dto.TaskConditionDTO;
 import com.github.novicezk.midjourney.enums.TaskAction;
@@ -55,48 +58,62 @@ public class TaskController {
 	public Task fetch(@ApiParam(value = "任务ID") @PathVariable String id) {
 		Optional<Task> queueTaskOptional = this.discordLoadBalancer.getQueueTasks().stream()
 				.filter(t -> CharSequenceUtil.equals(t.getId(), id)).findFirst();
+//		return queueTaskOptional.orElseGet(() -> {
+//			Task task = this.taskStoreService.get(id);
+//			if(null != task && task.getAction() == TaskAction.IMAGINE && task.getStatus() == TaskStatus.SUCCESS) {
+//				String imageUrl = task.getImageUrl();
+//				if(StrUtil.isNotBlank(imageUrl)) {
+//					String uploadUrl = "https://api.yingyunai.com/yingyun-boot/app/origin/upload";
+//                    InputStream inputStream = null;
+//                    try {
+//                        inputStream = new URL(imageUrl).openStream();
+//						byte[] fileBytes = inputStream.readAllBytes(); // 读取整个文件内容
+//						ByteArrayBody byteArrayBody = new ByteArrayBody(fileBytes, ContentType.DEFAULT_BINARY, "mj-image.png");
+//						MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+//						builder.addPart("file", byteArrayBody); // 字段名为 file
+//						HttpEntity entity = builder.build();
+//
+//						CloseableHttpClient client = HttpClients.createDefault();
+//						HttpPost req = new HttpPost(uploadUrl);
+//						req.setEntity(entity);
+//						CloseableHttpResponse response = client.execute(req);
+//						String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+//						int statusCode = response.getStatusLine().getStatusCode();
+//						if (statusCode == 200) {
+//							JSONObject jsonObject = new JSONObject(responseString);
+//							String newUrl = jsonObject.getStr("result");
+//							if(StrUtil.isNotBlank(newUrl)) {
+//								task.setImageUrl(newUrl);
+//							}
+//						}
+//
+//					} catch (Exception e) {
+//                        throw new RuntimeException(e);
+//                    }
+//                    finally {
+//						if(null != inputStream) {
+//                            try {
+//                                inputStream.close();
+//                            } catch (IOException e) {
+//                                throw new RuntimeException(e);
+//                            }
+//                        }
+//					}
+//				}
+//			}
+//			return task;
+//		});
 		return queueTaskOptional.orElseGet(() -> {
 			Task task = this.taskStoreService.get(id);
-			if(null != task && task.getAction() == TaskAction.IMAGINE && task.getStatus() == TaskStatus.SUCCESS) {
-				String imageUrl = task.getImageUrl();
-				if(StrUtil.isNotBlank(imageUrl)) {
-					String uploadUrl = "https://api.yingyunai.com/yingyun-boot/app/origin/upload";
-                    InputStream inputStream = null;
-                    try {
-                        inputStream = new URL(imageUrl).openStream();
-						byte[] fileBytes = inputStream.readAllBytes(); // 读取整个文件内容
-						ByteArrayBody byteArrayBody = new ByteArrayBody(fileBytes, ContentType.DEFAULT_BINARY, "mj-image.png");
-						MultipartEntityBuilder builder = MultipartEntityBuilder.create();
-						builder.addPart("file", byteArrayBody); // 字段名为 file
-						HttpEntity entity = builder.build();
+			try (InputStream inputStream = new URL(task.getImageUrl()).openStream()) {
+				// 读取所有字节
+				byte[] bytes = inputStream.readAllBytes();
 
-						CloseableHttpClient client = HttpClients.createDefault();
-						HttpPost req = new HttpPost(uploadUrl);
-						req.setEntity(entity);
-						CloseableHttpResponse response = client.execute(req);
-						String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-						int statusCode = response.getStatusLine().getStatusCode();
-						if (statusCode == 200) {
-							JSONObject jsonObject = new JSONObject(responseString);
-							String newUrl = jsonObject.getStr("result");
-							if(StrUtil.isNotBlank(newUrl)) {
-								task.setImageUrl(newUrl);
-							}
-						}
-
-					} catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                    finally {
-						if(null != inputStream) {
-                            try {
-                                inputStream.close();
-                            } catch (IOException e) {
-                                throw new RuntimeException(e);
-                            }
-                        }
-					}
-				}
+				// 编码为Base64
+				String base64 = Base64.encode(bytes);
+				task.setImageBase64(base64);
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
 			return task;
 		});
