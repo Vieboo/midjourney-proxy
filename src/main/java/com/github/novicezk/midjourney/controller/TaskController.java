@@ -60,7 +60,7 @@ public class TaskController {
 			if(null != task && task.getAction() == TaskAction.IMAGINE && task.getStatus() == TaskStatus.SUCCESS) {
 				String imageUrl = task.getImageUrl();
 				if(StrUtil.isNotBlank(imageUrl)) {
-					String uploadUrl = "http://61.153.252.254:16380/yingyun-boot/app/origin/upload";
+					String uploadUrl = "https://api.yingyunai.com/yingyun-boot/app/origin/upload";
                     InputStream inputStream = null;
                     try {
                         inputStream = new URL(imageUrl).openStream();
