@@ -105,7 +105,7 @@ public class TaskController {
 //		});
 		return queueTaskOptional.orElseGet(() -> {
 			Task task = this.taskStoreService.get(id);
-			if(null != task && task.getAction() == TaskAction.IMAGINE && task.getStatus() == TaskStatus.SUCCESS) {
+			if(null != task && task.getStatus() == TaskStatus.SUCCESS) {
 				String imageUrl = task.getImageUrl();
 				if (StrUtil.isNotBlank(imageUrl)) {
 					try (InputStream inputStream = new URL(task.getImageUrl()).openStream()) {
