@@ -105,15 +105,19 @@ public class TaskController {
 //		});
 		return queueTaskOptional.orElseGet(() -> {
 			Task task = this.taskStoreService.get(id);
-			try (InputStream inputStream = new URL(task.getImageUrl()).openStream()) {
-				// 读取所有字节
-				byte[] bytes = inputStream.readAllBytes();
-
-				// 编码为Base64
-				String base64 = Base64.encode(bytes);
-				task.setImageBase64(base64);
-			} catch (Exception e) {
-				e.printStackTrace();
+			if(null != task && task.getAction() == TaskAction.IMAGINE && task.getStatus() == TaskStatus.SUCCESS) {
+				String imageUrl = task.getImageUrl();
+				if (StrUtil.isNotBlank(imageUrl)) {
+					try (InputStream inputStream = new URL(task.getImageUrl()).openStream()) {
+						// 读取所有字节
+						byte[] bytes = inputStream.readAllBytes();
+						// 编码为Base64
+						String base64 = Base64.encode(bytes);
+						task.setImageBase64(base64);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
 			}
 			return task;
 		});
