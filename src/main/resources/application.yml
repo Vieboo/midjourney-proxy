@@ -3,5 +3,3 @@ mj:
     type: in_memory
     timeout: 30d
   translate-way: null
-veo:
-  ossAccessKey: abcdefG
