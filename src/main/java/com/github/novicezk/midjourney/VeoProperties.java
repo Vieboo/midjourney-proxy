@@ -10,4 +10,16 @@ import org.springframework.stereotype.Component;
 public class VeoProperties {
     @Value("${ossAccessKey:vieboo}")
     private String ossAccessKey;
+
+    @Value("${ossSecretKey:vieboo}")
+    private String ossSecretKey;
+
+    @Value("${ossEndpoint:vieboo}")
+    private String ossEndpoint;
+
+    @Value("${ossBucketName:vieboo}")
+    private String ossBucketName;
+
+    @Value("${ossBucketNameTest:vieboo}")
+    private String ossBucketNameTest;
 }
