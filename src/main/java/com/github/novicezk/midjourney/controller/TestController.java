@@ -26,8 +26,8 @@ public class TestController {
     @Autowired
     private VeoProperties veoProperties;
 
-    @ApiOperation(value = "查询所有任务")
-    @GetMapping("/config")
+    @ApiOperation(value = "test")
+//    @GetMapping("/config")
     public VeoProperties config() {
         return veoProperties;
     }

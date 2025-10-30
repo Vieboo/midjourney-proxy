@@ -22,4 +22,7 @@ public class VeoProperties {
 
     @Value("${ossBucketNameTest:vieboo}")
     private String ossBucketNameTest;
+
+    @Value("${geminiKey:vieboo}")
+    private String geminiKey;
 }
