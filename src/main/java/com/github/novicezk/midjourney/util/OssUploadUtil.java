@@ -6,6 +6,7 @@ import com.aliyun.oss.OSSClientBuilder;
 import com.aliyun.oss.OSSException;
 import com.aliyun.oss.model.*;
 import com.github.novicezk.midjourney.VeoProperties;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -20,6 +21,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @Component
+@Slf4j
 public class OssUploadUtil {
 
     @Autowired
@@ -75,6 +77,8 @@ public class OssUploadUtil {
         OSS ossClient = null;
         InputStream inputStream = null;
 
+        log.info("------开始下载------");
+
         try {
             // 打开连接
             URL url = new URL(videoUrl);
@@ -91,6 +95,8 @@ public class OssUploadUtil {
             }
 
             conn.connect();
+
+            log.info("------返回状态码：" + conn.getResponseCode() + "------");
 
             if (conn.getResponseCode() != 200) {
                 throw new RuntimeException("无法下载视频，响应码：" + conn.getResponseCode());
