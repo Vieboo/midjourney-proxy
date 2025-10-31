@@ -1,9 +1,7 @@
 package com.github.novicezk.midjourney.util;
 
-import com.aliyun.oss.ClientException;
-import com.aliyun.oss.OSS;
-import com.aliyun.oss.OSSClientBuilder;
-import com.aliyun.oss.OSSException;
+import com.aliyun.oss.*;
+import com.aliyun.oss.common.auth.DefaultCredentialProvider;
 import com.aliyun.oss.model.*;
 import com.github.novicezk.midjourney.VeoProperties;
 import lombok.extern.slf4j.Slf4j;
@@ -29,18 +27,26 @@ public class OssUploadUtil {
 
     private long urlExpireSeconds = 3600;
 
+    private OSSClient oClient = null;
+
     private OSS getClient() {
-        return new OSSClientBuilder().build(veoProperties.getOssEndpoint(), veoProperties.getOssAccessKey(), veoProperties.getOssSecretKey());
+        if (oClient == null) {
+            oClient = new OSSClient(veoProperties.getOssEndpoint(),
+                    new DefaultCredentialProvider(veoProperties.getOssAccessKey(), veoProperties.getOssSecretKey()),
+                    new ClientConfiguration());
+        }
+        return oClient;
     }
 
     /**
      * 上传本地文件
      */
     public String uploadFile(File file, String folder, boolean isTest) {
+        String bucketName = isTest ? veoProperties.getOssBucketNameTest() : veoProperties.getOssBucketName();
         String objectName = generateObjectName(folder, file.getName());
         OSS ossClient = getClient();
         try {
-            ossClient.putObject(isTest ? veoProperties.getOssBucketNameTest() : veoProperties.getOssBucketName(), objectName, file);
+            ossClient.putObject(bucketName, objectName, file);
             return objectName;
         } catch (OSSException | ClientException e) {
             throw new RuntimeException("OSS 上传文件失败：" + e.getMessage(), e);
@@ -53,10 +59,11 @@ public class OssUploadUtil {
      * 上传输入流（常用于前端上传）
      */
     public String uploadStream(InputStream inputStream, String fileName, String folder, boolean isTest) {
+        String bucketName = isTest ? veoProperties.getOssBucketNameTest() : veoProperties.getOssBucketName();
         String objectName = generateObjectName(folder, fileName);
         OSS ossClient = getClient();
         try {
-            ossClient.putObject(isTest ? veoProperties.getOssBucketNameTest() : veoProperties.getOssBucketName(), objectName, inputStream);
+            ossClient.putObject(bucketName, objectName, inputStream);
             return objectName;
         } catch (OSSException | ClientException e) {
             throw new RuntimeException("OSS 上传流失败：" + e.getMessage(), e);
@@ -74,6 +81,7 @@ public class OssUploadUtil {
      * @return 上传后的 OSS 访问地址
      */
     public String uploadFromUrl(String videoUrl, String filePath, Map<String, String> headers, boolean isTest) {
+        String bucketName = isTest ? veoProperties.getOssBucketNameTest() : veoProperties.getOssBucketName();
         OSS ossClient = null;
         InputStream inputStream = null;
 
@@ -111,17 +119,18 @@ public class OssUploadUtil {
 //            String objectName = generateObjectName(folder, fileName);
             String objectName = filePath;
 
-            log.info("------oss参数：bucket：" + (isTest ? veoProperties.getOssBucketNameTest() : veoProperties.getOssBucketName()) + "，filePath：" + objectName + "------");
+            log.info("------oss参数：bucket：" + (bucketName) + "，filePath：" + objectName + "------");
 
             // 上传到 OSS
             ossClient = getClient();
-            PutObjectResult result = ossClient.putObject(isTest ? veoProperties.getOssBucketNameTest() : veoProperties.getOssBucketName(), objectName, inputStream);
+            PutObjectResult result = ossClient.putObject(bucketName, objectName, inputStream);
+            ossClient.setBucketAcl(bucketName, CannedAccessControlList.PublicRead);
 
             log.info("------oss返回结果：" + result.toString() + "------");
 
             // 生成访问 URL
             Date expiration = new Date(System.currentTimeMillis() + urlExpireSeconds * 1000);
-            String fileUrl = ossClient.generatePresignedUrl(isTest ? veoProperties.getOssBucketNameTest() : veoProperties.getOssBucketName(), objectName, expiration).toString();
+            String fileUrl = ossClient.generatePresignedUrl(bucketName, objectName, expiration).toString();
 
             return fileUrl;
 
@@ -153,10 +162,11 @@ public class OssUploadUtil {
      * 分片上传（适合大文件）
      */
     public String multipartUpload(File file, String folder, boolean isTest) {
+        String bucketName = isTest ? veoProperties.getOssBucketNameTest() : veoProperties.getOssBucketName();
         String objectName = generateObjectName(folder, file.getName());
         OSS ossClient = getClient();
         try {
-            InitiateMultipartUploadRequest request = new InitiateMultipartUploadRequest(isTest ? veoProperties.getOssBucketNameTest() : veoProperties.getOssBucketName(), objectName);
+            InitiateMultipartUploadRequest request = new InitiateMultipartUploadRequest(bucketName, objectName);
             InitiateMultipartUploadResult result = ossClient.initiateMultipartUpload(request);
             String uploadId = result.getUploadId();
 
@@ -164,12 +174,12 @@ public class OssUploadUtil {
             long fileLength = file.length();
             int partCount = (int) Math.ceil((double) fileLength / partSize);
 
-            ListPartsRequest listPartsRequest = new ListPartsRequest(isTest ? veoProperties.getOssBucketNameTest() : veoProperties.getOssBucketName(), objectName, uploadId);
+            ListPartsRequest listPartsRequest = new ListPartsRequest(bucketName, objectName, uploadId);
             for (int i = 0; i < partCount; i++) {
                 long startPos = i * partSize;
                 long curPartSize = Math.min(partSize, fileLength - startPos);
                 UploadPartRequest uploadPartRequest = new UploadPartRequest();
-                uploadPartRequest.setBucketName(isTest ? veoProperties.getOssBucketNameTest() : veoProperties.getOssBucketName());
+                uploadPartRequest.setBucketName(bucketName);
                 uploadPartRequest.setKey(objectName);
                 uploadPartRequest.setUploadId(uploadId);
 //                uploadPartRequest.setFile(file);
@@ -181,7 +191,7 @@ public class OssUploadUtil {
 
             // 完成上传
 //            CompleteMultipartUploadRequest completeRequest =
-//                    new CompleteMultipartUploadRequest(isTest ? veoProperties.getOssBucketNameTest() : veoProperties.getOssBucketName(),
+//                    new CompleteMultipartUploadRequest(bucketName,
 //                            objectName, uploadId, ossClient.listParts(listPartsRequest).getParts());
 //            ossClient.completeMultipartUpload(completeRequest);
             return objectName;
@@ -196,10 +206,11 @@ public class OssUploadUtil {
      * 生成带签名访问 URL（适合私有文件）
      */
     public String generatePresignedUrl(String objectName, boolean isTest) {
+        String bucketName = isTest ? veoProperties.getOssBucketNameTest() : veoProperties.getOssBucketName();
         OSS ossClient = getClient();
         try {
             Date expiration = new Date(System.currentTimeMillis() + urlExpireSeconds * 1000);
-            URL url = ossClient.generatePresignedUrl(isTest ? veoProperties.getOssBucketNameTest() : veoProperties.getOssBucketName(), objectName, expiration);
+            URL url = ossClient.generatePresignedUrl(bucketName, objectName, expiration);
             return url.toString();
         } finally {
             ossClient.shutdown();
@@ -210,9 +221,10 @@ public class OssUploadUtil {
      * 删除文件
      */
     public void deleteFile(String objectName, boolean isTest) {
+        String bucketName = isTest ? veoProperties.getOssBucketNameTest() : veoProperties.getOssBucketName();
         OSS ossClient = getClient();
         try {
-            ossClient.deleteObject(isTest ? veoProperties.getOssBucketNameTest() : veoProperties.getOssBucketName(), objectName);
+            ossClient.deleteObject(bucketName, objectName);
         } finally {
             ossClient.shutdown();
         }
