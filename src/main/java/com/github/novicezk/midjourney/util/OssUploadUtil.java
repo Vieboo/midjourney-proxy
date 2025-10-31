@@ -24,15 +24,11 @@ public class OssUploadUtil {
 
     private long urlExpireSeconds = 3600;
 
-    private OSSClient oClient = null;
 
     private OSS getClient() {
-        if (oClient == null) {
-            oClient = new OSSClient(veoProperties.getOssEndpoint(),
-                    new DefaultCredentialProvider(veoProperties.getOssAccessKey(), veoProperties.getOssSecretKey()),
-                    new ClientConfiguration());
-        }
-        return oClient;
+        return new OSSClient(veoProperties.getOssEndpoint(),
+                new DefaultCredentialProvider(veoProperties.getOssAccessKey(), veoProperties.getOssSecretKey()),
+                new ClientConfiguration());
     }
 
     /**
