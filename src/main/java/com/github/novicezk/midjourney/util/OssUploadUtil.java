@@ -127,10 +127,10 @@ public class OssUploadUtil {
             log.info("------oss上传完成------");
 
             // 生成访问 URL
-            Date expiration = new Date(System.currentTimeMillis() + urlExpireSeconds * 1000);
-            String fileUrl = ossClient.generatePresignedUrl(bucketName, objectName, expiration).toString();
+//            Date expiration = new Date(System.currentTimeMillis() + urlExpireSeconds * 1000);
+//            String fileUrl = ossClient.generatePresignedUrl(bucketName, objectName, expiration).toString();
 
-            return fileUrl;
+            return filePath;
 
         } catch (IOException e) {
             throw new RuntimeException("从 URL 上传视频到 OSS 失败: " + e.getMessage(), e);

@@ -40,4 +40,19 @@ public class VeoHelperController {
         return result;
     }
 
+    @ApiOperation(value = "test")
+    @PostMapping("/uploadVideo")
+    public Map<String, Object> uploadVideo(@RequestBody Map<String, Object> params) {
+        Map<String, Object> result = new HashMap<>();
+        String url = params.get("url").toString();
+        String filePath = params.get("filePath").toString();
+        if(StrUtil.isNotBlank(url)) {
+            Map<String, String> headers = new HashMap<>();
+            headers.put("x-goog-api-key", properties.getGeminiKey());
+            String uploadUrl = ossUploadUtil.uploadFromUrl(url, filePath, headers, false);
+            result.put("uploadUrl", uploadUrl);
+        }
+        return result;
+    }
+
 }
