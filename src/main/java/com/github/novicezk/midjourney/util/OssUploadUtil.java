@@ -111,6 +111,8 @@ public class OssUploadUtil {
 //            String objectName = generateObjectName(folder, fileName);
             String objectName = filePath;
 
+            log.info("------oss参数：bucket：" + (isTest ? veoProperties.getOssBucketNameTest() : veoProperties.getOssBucketName()) + "，filePath：" + objectName + "------");
+
             // 上传到 OSS
             ossClient = getClient();
             PutObjectResult result = ossClient.putObject(isTest ? veoProperties.getOssBucketNameTest() : veoProperties.getOssBucketName(), objectName, inputStream);
