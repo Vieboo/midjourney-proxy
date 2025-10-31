@@ -109,8 +109,6 @@ public class OssUploadUtil {
 
             inputStream = new BufferedInputStream(conn.getInputStream());
 
-            log.info("------文件流大小：" + inputStream.readAllBytes().length + "------");
-
             // 生成 OSS 文件名
 //            String fileName = extractFileName(videoUrl);
 //            String objectName = generateObjectName(folder, fileName);
@@ -121,11 +119,12 @@ public class OssUploadUtil {
             // 上传到 OSS
             ossClient = getClient();
             byte[] bytes = inputStream.readAllBytes();
+            log.info("------文件流大小：" + bytes.length + "------");
             InputStream uploadStream = new ByteArrayInputStream(bytes);
             PutObjectResult result = ossClient.putObject(bucketName, objectName, uploadStream);
             ossClient.setBucketAcl(bucketName, CannedAccessControlList.PublicRead);
 
-            log.info("------oss返回结果：" + result.toString() + "------");
+            log.info("------oss上传完成------");
 
             // 生成访问 URL
             Date expiration = new Date(System.currentTimeMillis() + urlExpireSeconds * 1000);

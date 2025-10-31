@@ -34,7 +34,8 @@ public class VeoHelperController {
         if(StrUtil.isNotBlank(url)) {
             Map<String, String> headers = new HashMap<>();
             headers.put("x-goog-api-key", properties.getGeminiKey());
-            ossUploadUtil.uploadFromUrl(url, filePath, headers, true);
+            String uploadUrl = ossUploadUtil.uploadFromUrl(url, filePath, headers, true);
+            result.put("uploadUrl", uploadUrl);
         }
         return result;
     }
