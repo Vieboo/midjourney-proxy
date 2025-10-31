@@ -8,10 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Date;
@@ -123,7 +120,9 @@ public class OssUploadUtil {
 
             // 上传到 OSS
             ossClient = getClient();
-            PutObjectResult result = ossClient.putObject(bucketName, objectName, inputStream);
+            byte[] bytes = inputStream.readAllBytes();
+            InputStream uploadStream = new ByteArrayInputStream(bytes);
+            PutObjectResult result = ossClient.putObject(bucketName, objectName, uploadStream);
             ossClient.setBucketAcl(bucketName, CannedAccessControlList.PublicRead);
 
             log.info("------oss返回结果：" + result.toString() + "------");
