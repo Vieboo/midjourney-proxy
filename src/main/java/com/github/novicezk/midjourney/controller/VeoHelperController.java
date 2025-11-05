@@ -40,7 +40,6 @@ public class VeoHelperController {
     @Lazy
     private VeoProperties properties;
 
-    @ApiOperation(value = "test")
     @PostMapping("/test/uploadVideo")
     public Map<String, Object> testUploadVideo(@RequestBody Map<String, Object> params) {
         Map<String, Object> result = new HashMap<>();
@@ -55,7 +54,6 @@ public class VeoHelperController {
         return result;
     }
 
-    @ApiOperation(value = "test")
     @PostMapping("/uploadVideo")
     public Map<String, Object> uploadVideo(@RequestBody Map<String, Object> params) {
         Map<String, Object> result = new HashMap<>();
@@ -71,7 +69,6 @@ public class VeoHelperController {
     }
 
 
-    @ApiOperation(value = "test")
     @PostMapping("/stream")
     public ResponseEntity<StreamingResponseBody>  steam(@RequestBody Map<String, Object> params) throws IOException {
         String urlStr = params.get("url").toString();
