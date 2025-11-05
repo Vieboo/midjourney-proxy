@@ -72,7 +72,7 @@ public class VeoHelperController {
 
 
     @ApiOperation(value = "test")
-    @PostMapping("/steam")
+    @PostMapping("/stream")
     public ResponseEntity<StreamingResponseBody>  steam(@RequestBody Map<String, Object> params) throws IOException {
         String urlStr = params.get("url").toString();
         if(StrUtil.isNotBlank(urlStr)) {
