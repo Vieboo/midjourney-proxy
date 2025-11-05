@@ -116,6 +116,8 @@ public class VeoHelperController {
                         }
                     }
                 };
+                log.info("------stream完成------");
+
 
                 return ResponseEntity.ok()
                         .contentType(MediaType.APPLICATION_OCTET_STREAM)
