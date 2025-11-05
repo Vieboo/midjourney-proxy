@@ -6,13 +6,28 @@ import com.github.novicezk.midjourney.util.OssUploadUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.tomcat.util.http.fileupload.ByteArrayOutputStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @Api(tags = "veoHelper")
 @RestController
 @RequestMapping("/veo")
@@ -53,6 +68,73 @@ public class VeoHelperController {
             result.put("uploadUrl", uploadUrl);
         }
         return result;
+    }
+
+
+    @ApiOperation(value = "test")
+    @PostMapping("/steam")
+    public ResponseEntity<StreamingResponseBody>  steam(@RequestBody Map<String, Object> params) throws IOException {
+        String urlStr = params.get("url").toString();
+        if(StrUtil.isNotBlank(urlStr)) {
+            log.info("------开始下载------");
+            InputStream inputStream = null;
+            try {
+                URL url = new URL(urlStr);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(60000);
+                conn.setRequestMethod("GET");
+                conn.setRequestProperty("x-goog-api-key", properties.getGeminiKey());
+                conn.connect();
+                log.info("------返回状态码：" + conn.getResponseCode() + "------");
+                if (conn.getResponseCode() != 200) {
+                    log.info("------无法下载视频，响应码：" + conn.getResponseCode() + "------");
+                    throw new RuntimeException("无法下载视频，响应码：" + conn.getResponseCode());
+                }
+
+//                inputStream = new BufferedInputStream(conn.getInputStream());
+//                //读取视频数据
+//                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+//                byte[] buffer = new byte[8192];
+//                int len;
+//                while ((len = inputStream.read(buffer)) != -1) {
+//                    baos.write(buffer, 0, len);
+//                }
+//                // 返回视频流
+//                HttpHeaders headers = new HttpHeaders();
+//                headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+//                headers.setContentLength(baos.);
+//                return new ResponseEntity<>(baos.toByteArray(), headers, HttpStatus.OK);
+
+
+                StreamingResponseBody responseBody = outputStream -> {
+                    try (InputStream in = conn.getInputStream()) {
+                        byte[] buffer = new byte[8192];
+                        int len;
+                        while ((len = in.read(buffer)) != -1) {
+                            outputStream.write(buffer, 0, len);
+                        }
+                    }
+                };
+
+                return ResponseEntity.ok()
+                        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                        .body(responseBody);
+
+            } catch (MalformedURLException e) {
+                throw new RuntimeException(e);
+            } catch (ProtocolException e) {
+                throw new RuntimeException(e);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            finally {
+                if (inputStream != null) {
+                    inputStream.close();
+                }
+            }
+        }
+        return null;
     }
 
 }
