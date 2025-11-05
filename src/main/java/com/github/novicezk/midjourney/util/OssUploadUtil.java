@@ -129,6 +129,7 @@ public class OssUploadUtil {
             return filePath;
 
         } catch (IOException e) {
+            log.error("OSS上传失败：" + e.getMessage());
             throw new RuntimeException("从 URL 上传视频到 OSS 失败: " + e.getMessage(), e);
         } finally {
             if (inputStream != null) {
