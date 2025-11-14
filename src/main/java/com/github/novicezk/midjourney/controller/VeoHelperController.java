@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -66,7 +67,7 @@ public class VeoHelperController {
 
 
     @PostMapping("/stream")
-    public ResponseEntity<StreamingResponseBody>  steam(@RequestBody Map<String, Object> params) throws IOException {
+    public ResponseEntity<byte[]>  steam(@RequestBody Map<String, Object> params) throws IOException {
         String urlStr = params.get("url").toString();
         if(StrUtil.isNotBlank(urlStr)) {
             log.info("------开始下载------");
@@ -99,24 +100,24 @@ public class VeoHelperController {
 //                headers.setContentLength(baos.);
 //                return new ResponseEntity<>(baos.toByteArray(), headers, HttpStatus.OK);
 
-                AtomicInteger total = new AtomicInteger();
-                StreamingResponseBody responseBody = outputStream -> {
-                    try (InputStream in = conn.getInputStream()) {
-                        byte[] buffer = new byte[8192];
-                        int len;
-                        while ((len = in.read(buffer)) != -1) {
-                            outputStream.write(buffer, 0, len);
-                            total.addAndGet(len);
-                        }
-                    }
-                };
-                log.info("------stream完成------");
+                byte[] data;
 
+                try (InputStream in = conn.getInputStream();
+                     ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+
+                    byte[] buffer = new byte[8192];
+                    int len;
+                    while ((len = in.read(buffer)) != -1) {
+                        baos.write(buffer, 0, len);
+                    }
+
+                    data = baos.toByteArray();
+                }
 
                 return ResponseEntity.ok()
-                        .contentLength(total.get()) // 关键！
+                        .contentLength(data.length)
                         .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                        .body(responseBody);
+                        .body(data);
 
             } catch (MalformedURLException e) {
                 throw new RuntimeException(e);
