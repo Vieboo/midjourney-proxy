@@ -4,20 +4,15 @@ import cn.hutool.core.util.StrUtil;
 import com.github.novicezk.midjourney.VeoProperties;
 import com.github.novicezk.midjourney.util.OssUploadUtil;
 import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tomcat.util.http.fileupload.ByteArrayOutputStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -26,6 +21,7 @@ import java.net.ProtocolException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 @Api(tags = "veoHelper")
@@ -103,13 +99,14 @@ public class VeoHelperController {
 //                headers.setContentLength(baos.);
 //                return new ResponseEntity<>(baos.toByteArray(), headers, HttpStatus.OK);
 
-
+                AtomicInteger total = new AtomicInteger();
                 StreamingResponseBody responseBody = outputStream -> {
                     try (InputStream in = conn.getInputStream()) {
                         byte[] buffer = new byte[8192];
                         int len;
                         while ((len = in.read(buffer)) != -1) {
                             outputStream.write(buffer, 0, len);
+                            total.addAndGet(len);
                         }
                     }
                 };
@@ -117,6 +114,7 @@ public class VeoHelperController {
 
 
                 return ResponseEntity.ok()
+                        .contentLength(total.get()) // 关键！
                         .contentType(MediaType.APPLICATION_OCTET_STREAM)
                         .body(responseBody);
 
